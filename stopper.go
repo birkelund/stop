@@ -29,9 +29,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"runtime/pprof"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
+	"time"
 
 	"goober.dk/p/util/caller"
 
@@ -522,4 +526,72 @@ func (s *Stopper) WithCancel(ctx context.Context) context.Context {
 	defer s.mu.Unlock()
 	s.mu.cancels = append(s.mu.cancels, cancel)
 	return ctx
+}
+
+type StopError struct {
+	Err       error
+	ErrorCode int
+}
+
+func (e StopError) Error() string {
+	return e.Err.Error()
+}
+
+// Wait waits until the stopper is closed or a signal is received on signalCh.
+// It calls stopFn before terminating.
+func (s *Stopper) Wait(ctx context.Context, signalCh chan os.Signal, stopFn func()) error {
+	var err error
+	var rc int
+
+	// wait for termination or signal
+	select {
+	case <-s.ShouldStop():
+	case sig := <-signalCh:
+		log.Printf("received signal '%s'", sig)
+		if sig == os.Interrupt {
+			err = errors.New("interrupted")
+			msg := "a second interrupt will skip graceful shutdown and terminate forcefully"
+			fmt.Fprintln(os.Stdout, msg)
+		}
+
+		go stopFn()
+	}
+
+	msg := "initiating graceful shutdown of server"
+	log.Print(msg)
+	fmt.Fprintln(os.Stdout, msg)
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				//log.Infof(ctx, "running tasks:\n%s", s.RunningTasks())
+				log.Print("%d running tasks", s.NumTasks())
+
+			case <-s.ShouldStop():
+				return
+			}
+		}
+	}()
+
+	select {
+	case sig := <-signalCh:
+		err = fmt.Errorf("received signal '%s' during shutdown, initiating hard shutdown", sig)
+		log.Print(rc)
+
+		pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
+		rc = 128 + int(sig.(syscall.Signal))
+	case <-time.After(time.Minute):
+		err = fmt.Errorf("time limit reached, doing hard shutdown")
+		log.Print(err)
+	case <-s.IsStopped():
+		msg := "shutdown completed"
+		log.Print(msg)
+		fmt.Fprintln(os.Stdout, msg)
+	}
+
+	return StopError{err, rc}
 }
