@@ -17,6 +17,12 @@
 //
 // Modified by: Klaus Birkelund Jensen (birkelund@gmail.com)
 
+// Package stop provides a channel-based mechanism to stop an arbitrary array
+// of workers.
+//
+// This package is extracted from the CockroachDB source tree (see
+// https://github.com/cockroachdb/cockroach/tree/master/pkg/util/stop) and
+// modified to remove cockroach specific packages.
 package stop
 
 import (
