@@ -30,6 +30,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"runtime/pprof"
 	"sort"
 	"strings"
@@ -537,11 +538,20 @@ func (e StopError) Error() string {
 	return e.Err.Error()
 }
 
+var DefaultSignals = []os.Signal{
+	syscall.SIGINT,
+	syscall.SIGTERM,
+	syscall.SIGQUIT,
+}
+
 // Wait waits until the stopper is closed or a signal is received on signalCh.
-// It calls stopFn before terminating.
-func (s *Stopper) Wait(ctx context.Context, signalCh chan os.Signal, stopFn func()) error {
+// interruptFn is called when a signal is received.
+func (s *Stopper) Wait(ctx context.Context, interruptFn func(context.Context), sigs []os.Signal) error {
 	var err error
 	var rc int
+
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, sigs...)
 
 	// wait for termination or signal
 	select {
@@ -554,7 +564,7 @@ func (s *Stopper) Wait(ctx context.Context, signalCh chan os.Signal, stopFn func
 			fmt.Fprintln(os.Stdout, msg)
 		}
 
-		go stopFn()
+		go interruptFn(ctx)
 	}
 
 	msg := "initiating graceful shutdown of server"
@@ -569,7 +579,8 @@ func (s *Stopper) Wait(ctx context.Context, signalCh chan os.Signal, stopFn func
 			select {
 			case <-ticker.C:
 				//log.Infof(ctx, "running tasks:\n%s", s.RunningTasks())
-				log.Print("%d running tasks", s.NumTasks())
+				log.Printf("running tasks:\n%s", s.RunningTasks())
+				//log.Printf("%d running tasks", s.NumTasks())
 
 			case <-s.ShouldStop():
 				return
