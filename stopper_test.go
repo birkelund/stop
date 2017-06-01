@@ -13,6 +13,8 @@
 // permissions and limitations under the License.
 //
 // Author: Spencer Kimball (spencer.kimball@gmail.com)
+//
+// Modified by: Klaus Birkelund Jensen (birkelund@gmail.com)
 
 package stop_test
 
