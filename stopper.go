@@ -38,7 +38,7 @@ import (
 	"syscall"
 	"time"
 
-	"goober.dk/p/util/caller"
+	"github.com/kbj/caller"
 
 	"github.com/pkg/errors"
 

@@ -25,10 +25,10 @@ import (
 	"testing"
 	"time"
 
-	"goober.dk/p/util/caller"
-	"goober.dk/p/util/stop"
-
+	"github.com/kbj/caller"
+	"github.com/kbj/stop"
 	"github.com/pkg/errors"
+
 	"golang.org/x/net/context"
 )
 

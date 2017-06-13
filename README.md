@@ -3,7 +3,7 @@
 Package stop provides a channel-based mechanism to stop an arbitrary array of
 workers.
 
-`go get goober.dk/p/util/stop`
+`go get github.com/kbj/stop`
 
 # Credits
 
