@@ -38,7 +38,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kbj/caller"
+	"github.com/birkelund/caller"
 
 	"github.com/pkg/errors"
 

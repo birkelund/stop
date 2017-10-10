@@ -25,8 +25,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kbj/caller"
-	"github.com/kbj/stop"
+	"github.com/birkelund/caller"
+	"github.com/birkelund/stop"
 	"github.com/pkg/errors"
 
 	"golang.org/x/net/context"
